@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CM Tax Experts | Payment Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- html2canvas for Image Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+        .bg-brand-red { background-color: #ba0000; }
+        .text-brand-red { color: #ba0000; }
+        
+        /* The Card styles */
+        #payment-card {
+            background: white;
+            position: relative;
+            overflow: hidden;
+        }
+        .qr-container {
+            background: white;
+            padding: 8px;
+            border: 2px solid #f1f5f9;
+            border-radius: 12px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body class="min-h-screen py-8 px-4 flex flex-col items-center">
+
+    <!-- MAIN CONTAINER -->
+    <div class="w-full max-w-4xl grid md:grid-cols-2 gap-8">
+        
+        <!-- LEFT COLUMN: INPUT FORM -->
+        <div class="bg-white p-6 rounded-2xl shadow-xl border-t-8 border-[#ba0000] h-fit">
+            <h2 class="text-xl font-bold text-slate-800 mb-6 flex items-center">
+                <i class="fas fa-edit text-[#ba0000] mr-2"></i> Payment Details
+            </h2>
+
+            <div class="space-y-4 text-sm">
+                <!-- UPI & Payee -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Your UPI ID</label>
+                        <input type="text" id="upi-id" value="cmtaxexperts@ybl" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-[#ba0000] outline-none bg-slate-50" oninput="updateCard()">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Payee Name</label>
+                        <input type="text" id="payee-name" value="CM Tax Experts" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-[#ba0000] outline-none bg-slate-50" oninput="updateCard()">
+                        <p class="text-[10px] text-slate-400 mt-1">Name shown in app (Subject to bank verification)</p>
+                    </div>
+                </div>
+
+                <!-- Client Details -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Client Name</label>
+                        <input type="text" id="client-name" placeholder="Enter Client Name" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-[#ba0000] outline-none" oninput="updateCard()">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Client ID</label>
+                        <input type="text" id="client-id" placeholder="Optional" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-[#ba0000] outline-none" oninput="updateCard()">
+                    </div>
+                </div>
+
+                <!-- Payment Details -->
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Nature of Payment</label>
+                    <select id="nature-payment" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-[#ba0000] outline-none" onchange="updateCard()">
+                        <option value="">Select Option</option>
+                        <option value="ITR">ITR</option>
+                        <option value="GST Reg Fee">GST Reg Fee</option>
+                        <option value="GST Return">GST Return</option>
+                        <option value="GST on Rent">GST on Rent</option>
+                        <option value="Tax Payment">Tax Payment</option>
+                        <option value="ESI Contribution">ESI Contribution</option>
+                        <option value="EPF Contribution">EPF Contribution</option>
+                        <option value="Trademark Registration">Trademark Registration</option>
+                        <option value="Trademark Objection (Common)">Trademark Objection (Common)</option>
+                        <option value="Trademark Hearing">Trademark Hearing</option>
+                        <option value="Partnership Firm Registration">Partnership Firm Registration</option>
+                        <option value="Accounting Fee">Accounting Fee</option>
+                    </select>
+                </div>
+
+                <!-- Amount -->
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Amount (INR)</label>
+                    <input type="number" id="amount" placeholder="0.00" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-[#ba0000] outline-none font-bold text-lg" oninput="updateCard()">
+                    <p id="amount-warning" class="text-xs text-red-600 hidden mt-1"><i class="fas fa-exclamation-circle"></i> Limit Exceeded (Max 20 Lakhs)</p>
+                </div>
+
+                <!-- Notes -->
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Notes</label>
+                    <textarea id="notes" rows="2" placeholder="Additional details..." class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-[#ba0000] outline-none" oninput="updateCard()"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: PREVIEW CARD -->
+        <div class="flex flex-col items-center">
+            
+            <!-- THE SHAREABLE CARD (This element gets screenshot) -->
+            <div id="payment-card" class="w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+                <!-- Red Header -->
+                <div class="bg-[#ba0000] p-6 text-center text-white relative">
+                    <!-- Reduced Logo Size: w-12 h-12 (48px) -->
+                    <div class="w-12 h-12 bg-white rounded-lg mx-auto mb-3 shadow-lg flex items-center justify-center overflow-hidden">
+                        <!-- LOGO SECTION -->
+                        <img src="LOGOWEBSITE.png" onerror="this.style.display='none'; document.getElementById('fallback-logo').style.display='block';" alt="Logo" class="w-full h-full object-cover">
+                        
+                        <!-- Fallback Logo (Red Square with White Geometric Shape) -->
+                        <svg id="fallback-logo" style="display:none;" viewBox="0 0 100 100" class="w-full h-full">
+                            <rect width="100" height="100" fill="#ba0000"/>
+                            <!-- Abstract geometric CM shape based on your logo -->
+                            <path d="M20 20 L50 50 L20 80 M80 20 L50 50 L80 80" stroke="white" stroke-width="15" fill="none" stroke-linecap="square" stroke-linejoin="miter"/>
+                        </svg>
+                    </div>
+                    <h1 class="text-xl font-bold tracking-tight">CM Tax Experts</h1>
+                    <p class="text-xs opacity-90">Secure Payment Request</p>
+                </div>
+
+                <!-- Card Body -->
+                <div class="p-6">
+                    <!-- Client Info -->
+                    <div class="mb-5 pb-5 border-b border-dashed border-slate-300">
+                        <div class="flex justify-between mb-2">
+                            <span class="text-xs text-slate-500 uppercase font-bold">Client Name</span>
+                            <span class="text-sm font-bold text-slate-800 text-right" id="disp-client-name">-</span>
+                        </div>
+                        <div class="flex justify-between mb-2">
+                            <span class="text-xs text-slate-500 uppercase font-bold">Client ID</span>
+                            <span class="text-sm text-slate-800 text-right" id="disp-client-id">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-xs text-slate-500 uppercase font-bold">Payment For</span>
+                            <span class="text-sm text-[#ba0000] font-bold text-right" id="disp-nature">-</span>
+                        </div>
+                    </div>
+
+                    <!-- Amount Display -->
+                    <div class="text-center mb-5">
+                        <div class="text-xs text-slate-500 mb-1">Total Payable Amount</div>
+                        <div class="text-3xl font-bold text-slate-900" id="disp-amount">₹ 0.00</div>
+                    </div>
+
+                    <!-- Notes Display (Hidden if empty) -->
+                    <div id="disp-notes-container" class="hidden mb-5 bg-yellow-50 p-3 rounded text-xs text-slate-600 border border-yellow-100">
+                        <span class="font-bold">Note:</span> <span id="disp-notes"></span>
+                    </div>
+
+                    <!-- QR Code -->
+                    <div class="flex justify-center relative">
+                        <div class="qr-container">
+                            <div id="qrcode"></div>
+                            <!-- Small Center Logo Overlay -->
+                            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white p-0.5 rounded-sm w-7 h-7 flex items-center justify-center shadow-sm">
+                                <img src="LOGOWEBSITE.png" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" class="w-full h-full object-cover">
+                                <svg style="display:none;" viewBox="0 0 100 100" class="w-full h-full">
+                                    <rect width="100" height="100" fill="#ba0000"/>
+                                    <path d="M20 20 L50 50 L20 80 M80 20 L50 50 L80 80" stroke="white" stroke-width="15" fill="none"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-center text-[10px] text-slate-400 mt-2">Scan with any UPI App</p>
+                </div>
+
+                <!-- Footer -->
+                <div class="bg-slate-50 p-2 text-center border-t border-slate-100">
+                    <p class="text-[10px] text-slate-400">Powered by CM Tax Experts</p>
+                </div>
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            <div class="w-full max-w-sm mt-6 grid gap-3">
+                <a id="pay-link-btn" href="#" class="w-full bg-[#ba0000] hover:bg-red-700 text-white font-bold py-3 rounded-lg shadow text-center transition">
+                    Pay Now (App)
+                </a>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="shareCard()" id="share-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow flex items-center justify-center gap-2">
+                        <i class="fab fa-whatsapp"></i> Share Card
+                    </button>
+                    <button onclick="copyLink()" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-lg shadow flex items-center justify-center gap-2">
+                        <i class="fas fa-link"></i> Copy Link
+                    </button>
+                </div>
+                <div id="share-msg" class="text-center text-xs text-slate-500 h-4"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const LIMIT = 2000000;
+        let qrcodeObj = new QRCode(document.getElementById("qrcode"), {
+            width: 140,
+            height: 140,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        });
+
+        let currentLink = "";
+
+        function updateCard() {
+            // Get Values
+            const upiId = document.getElementById('upi-id').value;
+            const payeeName = document.getElementById('payee-name').value;
+            const amount = document.getElementById('amount').value;
+            const nature = document.getElementById('nature-payment').value;
+            const clientName = document.getElementById('client-name').value;
+            const clientId = document.getElementById('client-id').value;
+            const notes = document.getElementById('notes').value;
+
+            // Update Text Displays
+            document.getElementById('disp-client-name').innerText = clientName || "Guest Client";
+            document.getElementById('disp-client-id').innerText = clientId || "N/A";
+            document.getElementById('disp-nature').innerText = nature || "General Payment";
+            
+            // Format Amount
+            const amtVal = parseFloat(amount);
+            if (amtVal > LIMIT) {
+                document.getElementById('amount-warning').classList.remove('hidden');
+            } else {
+                document.getElementById('amount-warning').classList.add('hidden');
+            }
+            
+            if (amount && amtVal > 0) {
+                document.getElementById('disp-amount').innerText = "₹ " + amtVal.toLocaleString('en-IN', {minimumFractionDigits: 2});
+            } else {
+                document.getElementById('disp-amount').innerText = "Open Amount";
+            }
+
+            // Notes Logic
+            if(notes) {
+                document.getElementById('disp-notes-container').classList.remove('hidden');
+                document.getElementById('disp-notes').innerText = notes;
+            } else {
+                document.getElementById('disp-notes-container').classList.add('hidden');
+            }
+
+            // --- QR Generation ---
+            // 'tn' (Transaction Note)
+            let transactionNote = nature;
+            if (notes) transactionNote += " - " + notes;
+            if (clientId) transactionNote += " (ID: " + clientId + ")";
+            if (!transactionNote) transactionNote = "Payment";
+
+            // Construct Link
+            // pn is Payee Name (Visual), but bank name might override.
+            let link = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(payeeName)}&cu=INR`;
+            
+            if (amount && amtVal > 0) link += `&am=${amount}`;
+            if (transactionNote) link += `&tn=${encodeURIComponent(transactionNote.substring(0, 80))}`; 
+
+            currentLink = link;
+            document.getElementById('pay-link-btn').href = link;
+
+            // Redraw QR
+            qrcodeObj.clear();
+            qrcodeObj.makeCode(link);
+        }
+
+        async function shareCard() {
+            const btn = document.getElementById('share-btn');
+            const originalText = btn.innerHTML;
+            const msgDiv = document.getElementById('share-msg');
+
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+            try {
+                // Generate Image from the #payment-card div
+                const canvas = await html2canvas(document.getElementById('payment-card'), {
+                    scale: 2, 
+                    backgroundColor: "#ffffff",
+                    useCORS: true // Helps with loading local images in some contexts
+                });
+
+                canvas.toBlob(async (blob) => {
+                    const clientName = document.getElementById('client-name').value || 'Client';
+                    const file = new File([blob], `Payment_${clientName}.png`, { type: "image/png" });
+                    
+                    // SHARE DATA
+                    const shareText = `Payment Request for ${clientName}\nAmount: ${document.getElementById('disp-amount').innerText}\nPay Link: ${currentLink}`;
+                    
+                    const shareData = {
+                        files: [file],
+                        title: 'CM Tax Experts Payment',
+                        text: shareText
+                    };
+
+                    // Try Native Sharing (Mobile)
+                    if (navigator.canShare && navigator.canShare(shareData)) {
+                        try {
+                            await navigator.share(shareData);
+                            msgDiv.innerText = "Shared successfully!";
+                        } catch (err) {
+                            console.log("Share canceled", err);
+                        }
+                    } else {
+                        // Fallback for Desktop: Download Image
+                        const link = document.createElement('a');
+                        link.download = `Payment_${clientName}.png`;
+                        link.href = canvas.toDataURL();
+                        link.click();
+                        msgDiv.innerText = "Image downloaded. Please share manually.";
+                    }
+                    btn.innerHTML = originalText;
+                });
+
+            } catch (err) {
+                console.error(err);
+                btn.innerHTML = originalText;
+                msgDiv.innerText = "Error generating image.";
+            }
+        }
+
+        function copyLink() {
+            navigator.clipboard.writeText(currentLink).then(() => {
+                const msg = document.getElementById('share-msg');
+                msg.innerText = "Link copied to clipboard!";
+                setTimeout(() => msg.innerText = "", 3000);
+            });
+        }
+
+        // Init
+        updateCard();
+    </script>
+</body>
+</html>
