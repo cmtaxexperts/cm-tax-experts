@@ -190,7 +190,7 @@
 
     <script>
         // *** CONFIGURATION ***
-        const SCRIPT_URL = "PASTE_YOUR_WEB_APP_URL_HERE"; // <--- PASTE GAS URL HERE
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtRmRQ2fp88ngftg6Q8yA8o_uWPHP3rMECcx6BSBZJbjYbZ9Gy1W-RDb8hHeMakfWA/exec"; 
         
         let allData = [];
         let nextClientId = "";
@@ -316,10 +316,12 @@
                 
                 // Handle State - Pin
                 const lastPart = parts[parts.length-1];
-                if(lastPart.includes('-')) {
+                if(lastPart && lastPart.includes('-')) {
                     const sp = lastPart.split(' - ');
                     document.getElementById('addr_state').value = sp[0] || '';
                     document.getElementById('addr_pin').value = sp[1] || '';
+                } else {
+                     document.getElementById('addr_state').value = lastPart || '';
                 }
             }
         }
